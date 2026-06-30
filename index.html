@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Smart Campus Live Monitor</title>
+  <style>
+    :root {
+      font-family: Inter, Arial, sans-serif;
+      color-scheme: light;
+      --bg: #0f172a;
+      --surface: #112240;
+      --surface-strong: #152847;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-strong: #0ea5e9;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #f97316;
+      --border: rgba(148, 163, 184, 0.18);
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #1e293b 0%, var(--bg) 55%);
+      color: var(--text);
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 30%),
+                  radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.12), transparent 34%);
+      pointer-events: none;
+    }
+    header {
+      padding: 28px 32px 18px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-end;
+      position: relative;
+      z-index: 1;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 2.2vw, 2.8rem);
+      letter-spacing: -0.04em;
+    }
+    .subtitle {
+      color: var(--muted);
+      margin: 0;
+      font-size: 0.95rem;
+    }
+    .status-chip {
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: rgba(15, 118, 232, 0.16);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    main {
+      max-width: 1200px;
+      margin: 0 auto 40px;
+      padding: 0 28px;
+      position: relative;
+      z-index: 1;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+    }
+    .card {
+      background: rgba(15, 23, 42, 0.96);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 24px;
+      min-height: 140px;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.12);
+    }
+    .label {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 14px;
+      display: block;
+      letter-spacing: 0.02em;
+    }
+    .value {
+      font-size: clamp(2.2rem, 3vw, 3.4rem);
+      font-weight: 800;
+      line-height: 1;
+    }
+    .unit {
+      color: var(--muted);
+      font-size: 1rem;
+      margin-left: 6px;
+      font-weight: 600;
+    }
+    .details {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+    .panel {
+      margin-top: 20px;
+      padding: 24px;
+      border-radius: 26px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid var(--border);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+    .panel h2 {
+      margin-top: 0;
+      margin-bottom: 18px;
+      font-size: 1.15rem;
+      color: var(--text);
+    }
+    .badge {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 11px 16px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.12);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      font-weight: 700;
+    }
+    .metric-grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+    .status-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+    }
+    .pill {
+      display: inline-flex;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+    .pill.ok {
+      color: var(--success);
+      background: rgba(34, 197, 94, 0.12);
+    }
+    .pill.warn {
+      color: var(--warning);
+      background: rgba(245, 158, 11, 0.14);
+    }
+    .pill.danger {
+      color: var(--danger);
+      background: rgba(249, 115, 22, 0.14);
+    }
+    @media (max-width: 700px) {
+      header {
+        align-items: flex-start;
+      }
+      .status-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Smart Campus Live Monitor</h1>
+      <p class="subtitle">Real-time sensor readings from your ESP32 over Wi-Fi.</p>
+    </div>
+    <div class="status-chip" id="connectionState">Waiting for data</div>
+  </header>
+  <main>
+    <section class="grid">
+      <article class="card">
+        <span class="label">Temperature</span>
+        <div class="value"><span id="temperature">--</span><span class="unit">°C</span></div>
+        <p class="details">Ambient temperature from the DHT sensor.</p>
+      </article>
+      <article class="card">
+        <span class="label">Humidity</span>
+        <div class="value"><span id="humidity">--</span><span class="unit">%</span></div>
+        <p class="details">Relative humidity in the room.</p>
+      </article>
+      <article class="card">
+        <span class="label">Air Quality</span>
+        <div class="value" id="air">--</div>
+        <p class="details">Raw MQ-135 sensor value for air quality trend.</p>
+      </article>
+      <article class="card">
+        <span class="label">Motion</span>
+        <div class="value" id="motion">--</div>
+        <p class="details">Presence detection from the PIR sensor.</p>
+      </article>
+      <article class="card">
+        <span class="label">Current</span>
+        <div class="value"><span id="current">--</span><span class="unit">A</span></div>
+        <p class="details">Measured current draw from the load sensor.</p>
+      </article>
+      <article class="card">
+        <span class="label">Power</span>
+        <div class="value"><span id="power">--</span><span class="unit">W</span></div>
+        <p class="details">Estimated power consumption.</p>
+      </article>
+    </section>
+
+    <section class="panel">
+      <div class="status-row">
+        <div>
+          <h2>Latest telemetry</h2>
+          <p class="details" id="timestamp">No data received yet.</p>
+        </div>
+        <span class="badge" id="deviceId">device: waiting</span>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    function fmt(value, digits = 1) {
+      if (value === null || value === undefined) return "--";
+      return Number(value).toFixed(digits);
+    }
+
+    async function refresh() {
+      try {
+        const response = await fetch("/api/latest");
+        const data = await response.json();
+
+        document.getElementById("temperature").textContent = fmt(data.temperature_c);
+        document.getElementById("humidity").textContent = fmt(data.humidity_pct);
+        document.getElementById("air").textContent = data.air_quality_raw ?? "--";
+        document.getElementById("motion").textContent = data.motion === true ? "Yes" : data.motion === false ? "No" : "--";
+        document.getElementById("current").textContent = fmt(data.current_a, 2);
+        document.getElementById("power").textContent = fmt(data.power_w);
+        document.getElementById("timestamp").textContent = data.received_at || "No data received yet.";
+        document.getElementById("deviceId").textContent = `device: ${data.device_id || "waiting"}`;
+
+        const state = document.getElementById("connectionState");
+        if (data.received_at) {
+          state.textContent = "Connected ";
+          state.style.color = "var(--success)";
+          state.style.borderColor = "rgba(34, 197, 94, 0.35)";
+          state.style.background = "rgba(34, 197, 94, 0.12)";
+        } else {
+          state.textContent = "Waiting for data";
+          state.style.color = "var(--accent)";
+          state.style.borderColor = "rgba(56, 189, 248, 0.35)";
+          state.style.background = "rgba(56, 189, 248, 0.12)";
+        }
+      } catch (error) {
+        document.getElementById("connectionState").textContent = "Dashboard offline";
+      }
+    }
+
+    refresh();
+    setInterval(refresh, 2000);
+  </script>
+</body>
+</html>
+
